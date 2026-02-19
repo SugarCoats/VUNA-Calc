@@ -1660,6 +1660,7 @@ function clearHistory() {
   localStorage.removeItem("calcHistory");
   renderHistory();
 }
+
 document.addEventListener("DOMContentLoaded", function () {
   const scrollBtn = document.getElementById("scroll-to-calculator");
   if (scrollBtn) {
@@ -2058,48 +2059,82 @@ function cubeRootResult() {
   updateResult();
 }
 
+function solveSimultaneous() {
+  const eq1 = document.getElementById("eq1").value;
+  const eq2 = document.getElementById("eq2").value;
 
-// ------------------------------
-// REDO fuunctionality
-// ------------------------------
-
-function redoCalculation() {
-  
-  var calcHistory =localStorage.getItem("calcHistory")
-  var History = JSON.parse(calcHistory)
-  
-  var lastIn = History[History.length - 1];
-  console.log(lastIn)
-    if (lastIn) {
-        // Restore the entire calculation with result
-      const tokenizer = /(-?\d*\.?\d+|[()+\-*/%^])/g;
-
-      const match = lastIn.expression.match(tokenizer);
-      console.log(match)
-      if (match) {
-      var left = match[0];
-      var operator = match[1];
-      var right = match[2];
-        
-        
-        // Show the full expression first
-        document.getElementById('result').value = match.join("") + '=' + lastIn.answer ;
-        
-        // Then restore to just the result
-        
-        
-        // Disable redo button after use
-        // disableRedo();
-    
-      }
-    }
+  if (!eq1 || !eq2) {
+    alert("Please enter both equations!");
+    return;
   }
-function enableRedo() {
-    const redoBtn = document.getElementById('redoBtn');
-    redoBtn.disabled = false;
-}
 
-function disableRedo() {
-    const redoBtn = document.getElementById('redoBtn');
-    redoBtn.disabled = true;
-} 
+  try {
+    const parseEq = (eq) => {
+      // Remove spaces
+      eq = eq.replace(/\s+/g, '');
+
+      // Match coefficients: ax, by, =c
+      let a = 0, b = 0, c = 0;
+
+      // Split into left and right of =
+      const sides = eq.split('=');
+      if (sides.length !== 2) throw new Error("Equation must contain '='");
+
+      const left = sides[0];
+      c = parseFloat(sides[1]);
+
+      // Find x coefficient
+      const xMatch = left.match(/([+-]?[\d.]*)x/);
+      if (xMatch) {
+        let val = xMatch[1];
+        a = val === "" || val === "+" ? 1 : val === "-" ? -1 : parseFloat(val);
+      }
+
+      // Find y coefficient
+      const yMatch = left.match(/([+-]?[\d.]*)y/);
+      if (yMatch) {
+        let val = yMatch[1];
+        b = val === "" || val === "+" ? 1 : val === "-" ? -1 : parseFloat(val);
+      }
+
+      return { a, b, c };
+    };
+
+    const { a: a1, b: b1, c: c1 } = parseEq(eq1);
+    const { a: a2, b: b2, c: c2 } = parseEq(eq2);
+
+    // Solve using Cramer's rule
+    const det = a1 * b2 - a2 * b1;
+    if (det === 0) throw new Error("No unique solution exists");
+
+    const x = (c1 * b2 - c2 * b1) / det;
+    const y = (a1 * c2 - a2 * c1) / det;
+
+    const resultStr = `x = ${x}, y = ${y}`;
+
+    // Update main calculator display
+    currentExpression = `x=${x},y=${y}`;
+    updateResult();
+
+    // Show in word area
+    const wordResult = document.getElementById("word-result");
+    const wordArea = document.getElementById("word-area");
+    wordResult.innerHTML = `<span class="small-label">Simultaneous Equation Result</span><strong>${resultStr}</strong>`;
+    wordArea.style.display = "flex";
+
+    // Add to history
+    calculationHistory?.push({
+      expression: eq1 + " & " + eq2,
+      words: resultStr,
+      time: new Date().toLocaleTimeString(),
+    });
+    if (calculationHistory.length > 20) calculationHistory.shift();
+    localStorage.setItem("calcHistory", JSON.stringify(calculationHistory));
+    renderHistory();
+
+  } catch (err) {
+    alert("Error: " + err.message);
+    currentExpression = "Error";
+    updateResult();
+  }
+}
