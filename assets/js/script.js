@@ -2117,3 +2117,99 @@ function clearPercentageChange() {
     right = '';
     updateResult();
 }
+
+// STATISTICAL CALCULATOR FUNCTIONS
+function calculateStatistics() {
+    const input = document.getElementById('stats-data-input').value.trim();
+    
+    if (!input) {
+        alert('Please enter data values');
+        return;
+    }
+    
+    // Parse the input data
+    const dataArray = input.split(',').map(val => {
+        const num = parseFloat(val.trim());
+        return isNaN(num) ? null : num;
+    }).filter(val => val !== null);
+    
+    if (dataArray.length === 0) {
+        alert('No valid numbers found. Please enter comma-separated numbers.');
+        return;
+    }
+    
+    // Calculate statistics
+    const stats = {
+        count: dataArray.length,
+        sum: dataArray.reduce((a, b) => a + b, 0),
+        min: Math.min(...dataArray),
+        max: Math.max(...dataArray),
+        mean: 0,
+        median: 0,
+        mode: 'N/A',
+        stddev: 0
+    };
+    
+    // Calculate mean
+    stats.mean = stats.sum / stats.count;
+    
+    // Calculate median
+    const sorted = [...dataArray].sort((a, b) => a - b);
+    if (stats.count % 2 === 0) {
+        stats.median = (sorted[stats.count / 2 - 1] + sorted[stats.count / 2]) / 2;
+    } else {
+        stats.median = sorted[Math.floor(stats.count / 2)];
+    }
+    
+    // Calculate mode
+    const frequency = {};
+    let maxFreq = 0;
+    let modes = [];
+    
+    dataArray.forEach(num => {
+        frequency[num] = (frequency[num] || 0) + 1;
+        if (frequency[num] > maxFreq) {
+            maxFreq = frequency[num];
+        }
+    });
+    
+    Object.keys(frequency).forEach(key => {
+        if (frequency[key] === maxFreq) {
+            modes.push(parseFloat(key));
+        }
+    });
+    
+    if (modes.length === dataArray.length) {
+        stats.mode = 'No mode';
+    } else if (modes.length === 1) {
+        stats.mode = modes[0].toFixed(4);
+    } else {
+        stats.mode = modes.map(m => m.toFixed(4)).join(', ');
+    }
+    
+    // Calculate standard deviation
+    const variance = dataArray.reduce((sum, val) => sum + Math.pow(val - stats.mean, 2), 0) / stats.count;
+    stats.stddev = Math.sqrt(variance);
+    
+    // Display results
+    displayStatisticsResults(stats);
+}
+
+function displayStatisticsResults(stats) {
+    const resultDiv = document.getElementById('stats-result');
+    document.getElementById('stat-count').textContent = stats.count;
+    document.getElementById('stat-sum').textContent = stats.sum.toFixed(2);
+    document.getElementById('stat-mean').textContent = stats.mean.toFixed(4);
+    document.getElementById('stat-median').textContent = stats.median.toFixed(4);
+    document.getElementById('stat-mode').textContent = stats.mode;
+    document.getElementById('stat-min').textContent = stats.min.toFixed(2);
+    document.getElementById('stat-max').textContent = stats.max.toFixed(2);
+    document.getElementById('stat-stddev').textContent = stats.stddev.toFixed(4);
+    
+    resultDiv.style.display = 'block';
+}
+
+function clearStatistics() {
+    document.getElementById('stats-data-input').value = '';
+    document.getElementById('stats-result').style.display = 'none';
+}

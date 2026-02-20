@@ -970,6 +970,64 @@ border-radius:15px;">
                         </div>
                         <!-- END Percentage Change Calculator Section -->
 
+                        <!-- Statistical Calculator - NEW -->
+                        <div class="accordion-item">
+                          <h2 class="accordion-header" id="headingStatistics">
+                            <button class="accordion-button collapsed d-flex justify-content-between align-items-center"
+                              type="button" data-bs-toggle="collapse" data-bs-target="#collapseStatistics"
+                              aria-expanded="false" aria-controls="collapseStatistics">
+                              <span>📈 Statistics Calculator</span>
+                            </button>
+                          </h2>
+                          <div id="collapseStatistics" class="accordion-collapse collapse"
+                            aria-labelledby="headingStatistics" data-bs-parent="#converterAccordion">
+                            <div class="accordion-body">
+                              <p class="text-muted small mb-3">Calculate mean, median, mode, standard deviation, and more</p>
+                              
+                              <!-- Data Input -->
+                              <div class="mb-3">
+                                <label class="form-label small" style="font-weight: 600;">Enter Data (comma-separated)</label>
+                                <textarea class="form-control" id="stats-data-input" placeholder="e.g., 10, 20, 30, 40, 50" rows="3"></textarea>
+                                <small class="text-muted d-block mt-1">Separate numbers with commas</small>
+                              </div>
+
+                              <!-- Calculate Button -->
+                              <div class="d-grid gap-2 mb-3">
+                                <button class="btn btn-primary btn-sm" onclick="calculateStatistics()">
+                                  Calculate Statistics
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="clearStatistics()">
+                                  Clear
+                                </button>
+                              </div>
+
+                              <!-- Result Display -->
+                              <div id="stats-result" class="alert alert-info py-3 px-3 mb-0" style="display: none; font-size: 0.9rem;">
+                                <div class="row">
+                                  <div class="col-md-6 mb-2">
+                                    <div><strong>Count:</strong> <span id="stat-count">0</span></div>
+                                    <div><strong>Sum:</strong> <span id="stat-sum">0</span></div>
+                                    <div><strong>Mean:</strong> <span id="stat-mean">0</span></div>
+                                    <div><strong>Median:</strong> <span id="stat-median">0</span></div>
+                                  </div>
+                                  <div class="col-md-6 mb-2">
+                                    <div><strong>Mode:</strong> <span id="stat-mode">N/A</span></div>
+                                    <div><strong>Min Value:</strong> <span id="stat-min">0</span></div>
+                                    <div><strong>Max Value:</strong> <span id="stat-max">0</span></div>
+                                    <div><strong>Std Dev:</strong> <span id="stat-stddev">0</span></div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <!-- Info Box -->
+                              <div class="alert alert-light py-2 px-3 mt-3 mb-0 border" style="font-size: 0.85rem;">
+                                <strong>📌 Example:</strong> Input "10, 20, 30, 40, 50" to see all statistics calculated instantly.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- END Statistics Calculator Section -->
+
                       </div>
                       <!-- Simultaneous Equation Solver -->
     <div class="mb-3">
