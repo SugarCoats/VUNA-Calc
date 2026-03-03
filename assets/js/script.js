@@ -167,7 +167,6 @@ function fetchCurrencyRates() {
       if (data.rates) {
         alert("Currency rates fetched successfully.");
         console.log("Fetched currency rates:", data);
-        // API returns rates relative to USD (1 USD = data.rates[currency])
         currencyRates["EUR"] = data.rates.EUR || currencyRates["EUR"];
         currencyRates["GBP"] = data.rates.GBP || currencyRates["GBP"];
         currencyRates["JPY"] = data.rates.JPY || currencyRates["JPY"];
@@ -274,7 +273,6 @@ function factorial(n) {
 // Permutation: nPr = n! / (n-r)!
 // ------------------------------
 function calculatePermutation() {
-  // Parse expression like "5P2" or just use the current number with a prompt
   const match = currentExpression.match(/^(\d+)P(\d+)$/i);
 
   if (match) {
@@ -286,18 +284,19 @@ function calculatePermutation() {
       currentExpression = result.toString();
 
       calculationHistory?.push({
-        expression: `${n}P${r} = ${result}`,
+        expression: `${n}P${r}`,
         words: numberToWords(result),
+        answer: result,
         time: new Date().toLocaleTimeString(),
       });
       if (calculationHistory.length > 20) calculationHistory.shift();
       localStorage.setItem("calcHistory", JSON.stringify(calculationHistory));
       renderHistory();
+      resetRedoIndex();
     } else {
       currentExpression = "Error";
     }
   } else {
-    // If no P in expression, add it for user to complete
     currentExpression += "P";
   }
   updateResult();
@@ -307,7 +306,6 @@ function calculatePermutation() {
 // Combination: nCr = n! / (r! * (n-r)!)
 // ------------------------------
 function calculateCombination() {
-  // Parse expression like "5C2"
   const match = currentExpression.match(/^(\d+)C(\d+)$/i);
 
   if (match) {
@@ -319,18 +317,19 @@ function calculateCombination() {
       currentExpression = result.toString();
 
       calculationHistory?.push({
-        expression: `${n}C${r} = ${result}`,
+        expression: `${n}C${r}`,
         words: numberToWords(result),
+        answer: result,
         time: new Date().toLocaleTimeString(),
       });
       if (calculationHistory.length > 20) calculationHistory.shift();
       localStorage.setItem("calcHistory", JSON.stringify(calculationHistory));
       renderHistory();
+      resetRedoIndex();
     } else {
       currentExpression = "Error";
     }
   } else {
-    // If no C in expression, add it for user to complete
     currentExpression += "C";
   }
   updateResult();
@@ -359,13 +358,15 @@ function calculateFactorial() {
   const result = factorial(n);
 
   calculationHistory?.push({
-    expression: `${n}! = ${result}`,
+    expression: `${n}!`,
     words: numberToWords(result),
+    answer: result,
     time: new Date().toLocaleTimeString(),
   });
   if (calculationHistory.length > 20) calculationHistory.shift();
   localStorage.setItem("calcHistory", JSON.stringify(calculationHistory));
   renderHistory();
+  resetRedoIndex();
 
   currentExpression = result.toString();
   updateResult();
@@ -378,36 +379,31 @@ function calculateResult() {
   if (!currentExpression) return;
 
   try {
-    // Handle Permutation (nPr) expressions
     const permMatch = currentExpression.match(/^(\d+)P(\d+)$/i);
-    if (permMatch) {
-      calculatePermutation();
-      return;
-    }
+    if (permMatch) { calculatePermutation(); return; }
 
-    // Handle Combination (nCr) expressions
     const combMatch = currentExpression.match(/^(\d+)C(\d+)$/i);
-    if (combMatch) {
-      calculateCombination();
-      return;
-    }
+    if (combMatch) { calculateCombination(); return; }
 
-    let result = eval(currentExpression);
+    // Save original expression before normalizing (preserves sin/cos/tan etc.)
+    const savedExpression = currentExpression;
 
-    if (isNaN(result) || !isFinite(result)) {
-      throw new Error();
-    }
+    let normalizedExpression = normalizeExpression(currentExpression);
+    let result = eval(normalizedExpression);
+
+    if (isNaN(result) || !isFinite(result)) throw new Error();
 
     calculationHistory?.push({
-      expression: currentExpression,
+      expression: savedExpression,
       words: numberToWords(result),
+      answer: result,
       time: new Date().toLocaleTimeString(),
     });
 
     if (calculationHistory.length > 20) calculationHistory.shift();
-
     localStorage.setItem("calcHistory", JSON.stringify(calculationHistory));
     renderHistory();
+    resetRedoIndex();
 
     currentExpression = result.toString();
     updateResult();
@@ -434,49 +430,35 @@ function tenPower() {
 // ------------------------------
 // HEXADECIMAL CONVERSION FEATURE
 // ------------------------------
-/**
- * Converts the current decimal number to hexadecimal format
- * Displays the result in the word-result area with proper formatting
- */
 function convertToHex() {
-  // Check if there's a value to convert
   if (currentExpression.length === 0 || currentExpression === "0") {
     alert("Please enter a number first");
     return;
   }
 
-  // Parse the current expression as a number
   const num = parseFloat(currentExpression);
 
-  // Validate the input
   if (isNaN(num)) {
     alert("Invalid number. Please enter a valid decimal number.");
     return;
   }
 
-  // Check if the number is an integer (hexadecimal conversion works best with integers)
   if (!Number.isInteger(num)) {
     alert(
       "Hexadecimal conversion works with whole numbers only. Your number will be rounded.",
     );
   }
 
-  // Convert to integer (rounds if decimal)
   const integerNum = Math.floor(Math.abs(num));
-
-  // Perform the conversion to hexadecimal
   const hexValue = integerNum.toString(16).toUpperCase();
 
-  // Get references to display elements
   const wordResult = document.getElementById("word-result");
   const wordArea = document.getElementById("word-area");
 
-  // Create formatted display message
   let displayMessage =
     '<span class="small-label">Hexadecimal Conversion</span>';
   displayMessage += "<strong>";
 
-  // Add negative sign if original number was negative
   if (num < 0) {
     displayMessage += "Decimal: -" + integerNum + " = Hex: -0x" + hexValue;
   } else {
@@ -485,15 +467,12 @@ function convertToHex() {
 
   displayMessage += "</strong>";
 
-  // Display the result
   wordResult.innerHTML = displayMessage;
   wordArea.style.display = "flex";
 
-  // Update the main display to show the hex value
   currentExpression = hexValue;
   updateResult();
 
-  // Enable the speak button for the result
   enableSpeakButton();
 
   console.log("HEX Conversion successful:", integerNum, "->", hexValue);
@@ -577,7 +556,6 @@ function normalizeExpression(expr) {
 }
 
 function isPrime(num) {
-  // Numbers less than 2 are not prime
   if (num <= 1) {
     return false;
   }
@@ -774,7 +752,6 @@ function convertToFraction() {
   const value = Number(display.value);
   if (isNaN(value)) return;
 
-  // Handle integers
   if (Number.isInteger(value)) {
     display.value = value + "/1";
     currentExpression = display.value;
@@ -1236,7 +1213,6 @@ function numberToWords(num) {
 }
 
 // hausa language
-
 function numberToHausa(num) {
   if (num === "Error") return "Kuskure";
 
@@ -1257,12 +1233,12 @@ function numberToHausa(num) {
     "",
     "Ashirin",
     "Talatin",
-    "Arba’in",
+    "Arba'in",
     "Hamsin",
     "Sittin",
-    "Sab’in",
+    "Sab'in",
     "Tamanin",
-    "Tis’in",
+    "Tis'in",
   ];
   const teens = [
     "Goma",
@@ -1338,7 +1314,7 @@ function numberToHausa(num) {
 
   return result.trim();
 }
-// translate to hausas
+
 function translateToHausa() {
   if (!left || operator || right) return;
 
@@ -1357,7 +1333,6 @@ function updateResult() {
   const wordResult = document.getElementById("word-result");
   const wordArea = document.getElementById("word-area");
 
-  // Check if currentExpression is a valid number
   const num = parseFloat(currentExpression);
   if (
     !isNaN(num) &&
@@ -1425,7 +1400,6 @@ function backToEnglish() {
 }
 
 // Factor Finder & Prime Checker
-// Get factors of a number
 function factors(num) {
   let result = [];
   for (let i = 1; i <= num; i++) {
@@ -1434,9 +1408,8 @@ function factors(num) {
   return result;
 }
 
-// Main function to handle factor finding and prime checking
 function factorPrimeCheck() {
-  const numStr = left || right; // use current number or result
+  const numStr = left || right;
   const num = parseInt(numStr);
 
   if (isNaN(num)) {
@@ -1446,11 +1419,9 @@ function factorPrimeCheck() {
 
   const factorList = factors(num);
   const primeCheck = isPrime(num);
-  // Prepare message
   let message = `Factors of ${num}: ${factorList.join(", ")}\n`;
   message += `Is ${num} prime? ${primeCheck ? "Yes" : "No"}`;
 
-  // Push to steps and keep max 6
   steps.push(message);
   if (steps.length > 6) steps.shift();
 
@@ -1458,8 +1429,7 @@ function factorPrimeCheck() {
 }
 
 function updateStepsDisplay() {
-  // This function might be used elsewhere in your code
-  // Keeping it here for compatibility
+  // Keeping for compatibility
 }
 
 fetchCurrencyRates();
@@ -1546,7 +1516,6 @@ function normalizeSpeech(text) {
 
   normalized = normalized.replace(/([\+\-\*\/])/g, " $1 ");
 
-  // Split into tokens
   return normalized.split(" ").filter((t) => t.trim() !== "");
 }
 
@@ -1566,16 +1535,17 @@ function toggleHistory() {
     btn.classList.replace("btn-primary", "btn-outline-primary");
   }
 }
+
 function saveHistoryToStorage() {
   localStorage.setItem("calcHistory", JSON.stringify(calculationHistory));
 }
+
 function renderHistory() {
   const list = document.getElementById("history-list");
   if (!list) return;
 
   list.innerHTML = "";
 
-  // Empty state
   if (calculationHistory.length === 0) {
     const emptyTemplate = document.getElementById("history-empty-template");
     if (emptyTemplate) {
@@ -1583,7 +1553,7 @@ function renderHistory() {
     }
     return;
   }
-  // Render items latest first
+
   calculationHistory
     .slice()
     .reverse()
@@ -1603,21 +1573,20 @@ function renderHistory() {
       if (item.remark) {
         remarkText.textContent = item.remark;
       }
-      // DELETE
+
       tpl.querySelector(".btn-delete").onclick = (e) => {
         e.stopPropagation();
         calculationHistory.splice(index, 1);
         saveHistoryToStorage();
         renderHistory();
       };
-      // SHOW REMARK INPUT
+
       tpl.querySelector(".btn-remark").onclick = (e) => {
         e.stopPropagation();
         remarkBox.classList.remove("d-none");
         remarkInput.focus();
       };
 
-      // SET REMARK
       remarkBox.querySelector(".btn-primary").onclick = (e) => {
         e.stopPropagation();
         item.remark = remarkInput.value.trim();
@@ -1625,12 +1594,11 @@ function renderHistory() {
         renderHistory();
       };
 
-      // CANCEL REMARK
       remarkBox.querySelector(".btn-outline-secondary").onclick = (e) => {
         e.stopPropagation();
         remarkBox.classList.add("d-none");
       };
-      // Click to restore calculation
+
       itemEl.addEventListener("click", () => {
         currentExpression = item.expression;
         updateResult();
@@ -1639,16 +1607,17 @@ function renderHistory() {
 
       list.appendChild(tpl);
 
-      // Trigger fade-in
       setTimeout(() => {
         itemEl.classList.add("show");
-      }, index * 50); // staggered fade-in
+      }, index * 50);
     });
 }
+
 function loadHistoryFromStorage() {
   const stored = localStorage.getItem("calcHistory");
   if (stored) calculationHistory = JSON.parse(stored);
 }
+
 function clearHistory() {
   if (!confirm("Are you sure you want to clear all calculation history?"))
     return;
@@ -1662,25 +1631,68 @@ document.addEventListener("DOMContentLoaded", function () {
   if (scrollBtn) {
     scrollBtn.addEventListener("click", () => {
       const calculatorTop = document.querySelector(".calculator-card");
-
       if (calculatorTop) {
-        calculatorTop.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+        calculatorTop.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     });
   }
 });
 
-// ============================================
-// PHYSICS CALCULATOR FUNCTIONALITY - NEW CODE
-// ============================================
+// ------------------------------
+// Redo Functionality
+// ------------------------------
+var redoIndex = -1;
 
-/**
- * Physics formulas database
- * Contains common physics equations organized by category
- */
+function redoCalculation() {
+  var calcHistory = localStorage.getItem("calcHistory");
+  if (!calcHistory) return;
+  var History;
+  try { History = JSON.parse(calcHistory); } catch(e) { return; }
+  if (!History || History.length === 0) return;
+
+  // Only cycle through the last 5 (or fewer) calculations
+  var maxSteps = Math.min(5, History.length);
+  redoIndex = (redoIndex + 1) % maxSteps;
+
+  var entry = History[History.length - 1 - redoIndex];
+  if (!entry) return;
+
+  var displayExpr = entry.expression || "";
+  var displayAnswer = (entry.answer !== undefined && entry.answer !== null) ? entry.answer : "";
+
+  // Show full expression = answer (preserves sin/cos/tan/sqrt/! etc.)
+  var resultDisplay = document.getElementById("result");
+  if (resultDisplay) {
+    resultDisplay.value = displayAnswer !== "" ? displayExpr + " = " + displayAnswer : displayExpr;
+  }
+
+  // Update the English word area
+  if (entry.words) {
+    var wordResult = document.getElementById("word-result");
+    var wordArea = document.getElementById("word-area");
+    if (wordResult) wordResult.innerHTML = entry.words;
+    if (wordArea) wordArea.style.display = "flex";
+  }
+}
+
+// Resets the redo pointer whenever a new calculation is made
+function resetRedoIndex() {
+  redoIndex = -1;
+}
+
+function enableRedo() {
+  const redoBtn = document.getElementById("redoBtn");
+  if (redoBtn) redoBtn.disabled = false;
+}
+
+function disableRedo() {
+  const redoBtn = document.getElementById("redoBtn");
+  if (redoBtn) redoBtn.disabled = true;
+}
+
+// ============================================
+// PHYSICS CALCULATOR FUNCTIONALITY
+// ============================================
 const physicsFormulas = {
   mechanics: {
     velocity: {
@@ -1829,9 +1841,6 @@ const physicsFormulas = {
   },
 };
 
-/**
- * Calculate physics formula based on selected category and formula
- */
 function calculatePhysics() {
   const category = document.getElementById("physics-category").value;
   const formulaKey = document.getElementById("physics-formula").value;
@@ -1846,7 +1855,6 @@ function calculatePhysics() {
   const formula = physicsFormulas[category][formulaKey];
   const inputs = [];
 
-  // Get all input values
   for (let i = 1; i <= 3; i++) {
     const input = document.getElementById(`physics-input-${i}`);
     if (input && input.style.display !== "none") {
@@ -1869,7 +1877,6 @@ function calculatePhysics() {
       return;
     }
 
-    // Display result with formula
     let resultHTML = '<div class="alert alert-success py-2 px-3">';
     resultHTML += `<strong>${formula.name}</strong><br>`;
     resultHTML += `Formula: ${formula.formula}<br>`;
@@ -1885,23 +1892,18 @@ function calculatePhysics() {
   }
 }
 
-/**
- * Update formula dropdown when category changes
- */
 function updatePhysicsFormulas() {
   const category = document.getElementById("physics-category").value;
   const formulaSelect = document.getElementById("physics-formula");
   const inputsContainer = document.getElementById("physics-inputs-container");
   const resultDiv = document.getElementById("physics-result");
 
-  // Clear previous selections
   formulaSelect.innerHTML = '<option value="">-- Select Formula --</option>';
   inputsContainer.innerHTML = "";
   resultDiv.innerHTML = "";
 
   if (!category) return;
 
-  // Populate formulas for selected category
   const formulas = physicsFormulas[category];
   for (const [key, formula] of Object.entries(formulas)) {
     const option = document.createElement("option");
@@ -1911,16 +1913,12 @@ function updatePhysicsFormulas() {
   }
 }
 
-/**
- * Update input fields when formula changes
- */
 function updatePhysicsInputs() {
   const category = document.getElementById("physics-category").value;
   const formulaKey = document.getElementById("physics-formula").value;
   const inputsContainer = document.getElementById("physics-inputs-container");
   const resultDiv = document.getElementById("physics-result");
 
-  // Clear previous inputs and results
   inputsContainer.innerHTML = "";
   resultDiv.innerHTML = "";
 
@@ -1928,15 +1926,13 @@ function updatePhysicsInputs() {
 
   const formula = physicsFormulas[category][formulaKey];
 
-  // Display formula description
   let inputsHTML = `<div class="alert alert-info py-2 px-3 mb-2"><small>${formula.description}</small></div>`;
 
-  // Create input fields
   formula.inputs.forEach((inputLabel, index) => {
     inputsHTML += `
       <div class="mb-2">
         <label class="form-label small">${inputLabel}</label>
-        <input type="number" class="form-control form-control-sm" id="physics-input-${index + 1}" 
+        <input type="number" class="form-control form-control-sm" id="physics-input-${index + 1}"
                placeholder="Enter ${inputLabel}" step="any">
       </div>
     `;
@@ -1945,9 +1941,6 @@ function updatePhysicsInputs() {
   inputsContainer.innerHTML = inputsHTML;
 }
 
-/**
- * Clear all physics calculator inputs and results
- */
 function clearPhysicsCalculator() {
   document.getElementById("physics-category").value = "";
   document.getElementById("physics-formula").innerHTML =
@@ -1959,6 +1952,7 @@ function clearPhysicsCalculator() {
 // ============================================
 // END OF PHYSICS CALCULATOR FUNCTIONALITY
 // ============================================
+
 function openGeometry() {
   document.getElementById("geometryModal").style.display = "flex";
 }
@@ -1983,38 +1977,30 @@ function calculateGeometry() {
       if (isNaN(v2)) return alert("Enter Value 2");
       result = v1 * v2;
       break;
-
     case "triangle":
       if (isNaN(v2)) return alert("Enter Value 2");
       result = 0.5 * v1 * v2;
       break;
-
     case "circle":
       result = Math.PI * v1 * v1;
       break;
-
     case "square":
       result = v1 * v1;
       break;
-
     case "perimeterSquare":
       result = 4 * v1;
       break;
-
     case "perimeterRectangle":
       if (isNaN(v2)) return alert("Enter Value 2");
       result = 2 * (v1 + v2);
       break;
-
     case "cubeVolume":
       result = v1 * v1 * v1;
       break;
-
     case "cylinderVolume":
       if (isNaN(v2)) return alert("Enter Height");
       result = Math.PI * v1 * v1 * v2;
       break;
-
     default:
       alert("Select a shape");
       return;
@@ -2024,7 +2010,6 @@ function calculateGeometry() {
   operator = "";
   right = "";
   currentExpression = left;
-  // updateResult();
   calculateResult();
   closeGeometry();
 }
@@ -2058,158 +2043,140 @@ function cubeRootResult() {
 // ============================================
 // PERCENTAGE CHANGE CALCULATOR FUNCTIONS
 // ============================================
-
 function calculatePercentageChange() {
-    // Get input values
-    const original = parseFloat(document.getElementById('pc-original').value);
-    const newValue = parseFloat(document.getElementById('pc-new').value);
-    
-    // Validation
-    if (isNaN(original) || isNaN(newValue)) {
-        alert('Please enter valid numbers');
-        return;
-    }
-    
-    if (original === 0) {
-        alert('Original value cannot be zero');
-        return;
-    }
-    
-    // Calculate percentage change
-    const absoluteChange = newValue - original;
-    const percentageChange = (absoluteChange / Math.abs(original)) * 100;
-    
-    // Determine description
-    let description = '';
-    if (percentageChange > 0) {
-        description = `an increase of ${Math.abs(percentageChange).toFixed(2)}%`;
-    } else if (percentageChange < 0) {
-        description = `a decrease of ${Math.abs(percentageChange).toFixed(2)}%`;
-    } else {
-        description = 'no change';
-    }
-    
-    // Display results
-    const resultDiv = document.getElementById('pc-result');
-    document.getElementById('pc-change-value').textContent = percentageChange.toFixed(2);
-    document.getElementById('pc-absolute-change').textContent = absoluteChange.toFixed(2);
-    document.getElementById('pc-description').textContent = `From ${original} to ${newValue} is ${description}`;
-    resultDiv.style.display = 'block';
-    
-    // Update main calculator display with the result
-    left = percentageChange.toFixed(2).toString();
-    operator = '';
-    right = '';
-    updateResult();
+  const original = parseFloat(document.getElementById('pc-original').value);
+  const newValue = parseFloat(document.getElementById('pc-new').value);
+
+  if (isNaN(original) || isNaN(newValue)) {
+    alert('Please enter valid numbers');
+    return;
+  }
+
+  if (original === 0) {
+    alert('Original value cannot be zero');
+    return;
+  }
+
+  const absoluteChange = newValue - original;
+  const percentageChange = (absoluteChange / Math.abs(original)) * 100;
+
+  let description = '';
+  if (percentageChange > 0) {
+    description = `an increase of ${Math.abs(percentageChange).toFixed(2)}%`;
+  } else if (percentageChange < 0) {
+    description = `a decrease of ${Math.abs(percentageChange).toFixed(2)}%`;
+  } else {
+    description = 'no change';
+  }
+
+  const resultDiv = document.getElementById('pc-result');
+  document.getElementById('pc-change-value').textContent = percentageChange.toFixed(2);
+  document.getElementById('pc-absolute-change').textContent = absoluteChange.toFixed(2);
+  document.getElementById('pc-description').textContent = `From ${original} to ${newValue} is ${description}`;
+  resultDiv.style.display = 'block';
+
+  left = percentageChange.toFixed(2).toString();
+  operator = '';
+  right = '';
+  updateResult();
 }
 
 function clearPercentageChange() {
-    // Clear input fields
-    document.getElementById('pc-original').value = '100';
-    document.getElementById('pc-new').value = '150';
-    
-    // Hide result
-    document.getElementById('pc-result').style.display = 'none';
-    
-    // Clear calculator display
-    left = '';
-    operator = '';
-    right = '';
-    updateResult();
+  document.getElementById('pc-original').value = '100';
+  document.getElementById('pc-new').value = '150';
+  document.getElementById('pc-result').style.display = 'none';
+  left = '';
+  operator = '';
+  right = '';
+  updateResult();
 }
 
+// ============================================
 // STATISTICAL CALCULATOR FUNCTIONS
+// ============================================
 function calculateStatistics() {
-    const input = document.getElementById('stats-data-input').value.trim();
-    
-    if (!input) {
-        alert('Please enter data values');
-        return;
+  const input = document.getElementById('stats-data-input').value.trim();
+
+  if (!input) {
+    alert('Please enter data values');
+    return;
+  }
+
+  const dataArray = input.split(',').map(val => {
+    const num = parseFloat(val.trim());
+    return isNaN(num) ? null : num;
+  }).filter(val => val !== null);
+
+  if (dataArray.length === 0) {
+    alert('No valid numbers found. Please enter comma-separated numbers.');
+    return;
+  }
+
+  const stats = {
+    count: dataArray.length,
+    sum: dataArray.reduce((a, b) => a + b, 0),
+    min: Math.min(...dataArray),
+    max: Math.max(...dataArray),
+    mean: 0,
+    median: 0,
+    mode: 'N/A',
+    stddev: 0
+  };
+
+  stats.mean = stats.sum / stats.count;
+
+  const sorted = [...dataArray].sort((a, b) => a - b);
+  if (stats.count % 2 === 0) {
+    stats.median = (sorted[stats.count / 2 - 1] + sorted[stats.count / 2]) / 2;
+  } else {
+    stats.median = sorted[Math.floor(stats.count / 2)];
+  }
+
+  const frequency = {};
+  let maxFreq = 0;
+  let modes = [];
+
+  dataArray.forEach(num => {
+    frequency[num] = (frequency[num] || 0) + 1;
+    if (frequency[num] > maxFreq) {
+      maxFreq = frequency[num];
     }
-    
-    // Parse the input data
-    const dataArray = input.split(',').map(val => {
-        const num = parseFloat(val.trim());
-        return isNaN(num) ? null : num;
-    }).filter(val => val !== null);
-    
-    if (dataArray.length === 0) {
-        alert('No valid numbers found. Please enter comma-separated numbers.');
-        return;
+  });
+
+  Object.keys(frequency).forEach(key => {
+    if (frequency[key] === maxFreq) {
+      modes.push(parseFloat(key));
     }
-    
-    // Calculate statistics
-    const stats = {
-        count: dataArray.length,
-        sum: dataArray.reduce((a, b) => a + b, 0),
-        min: Math.min(...dataArray),
-        max: Math.max(...dataArray),
-        mean: 0,
-        median: 0,
-        mode: 'N/A',
-        stddev: 0
-    };
-    
-    // Calculate mean
-    stats.mean = stats.sum / stats.count;
-    
-    // Calculate median
-    const sorted = [...dataArray].sort((a, b) => a - b);
-    if (stats.count % 2 === 0) {
-        stats.median = (sorted[stats.count / 2 - 1] + sorted[stats.count / 2]) / 2;
-    } else {
-        stats.median = sorted[Math.floor(stats.count / 2)];
-    }
-    
-    // Calculate mode
-    const frequency = {};
-    let maxFreq = 0;
-    let modes = [];
-    
-    dataArray.forEach(num => {
-        frequency[num] = (frequency[num] || 0) + 1;
-        if (frequency[num] > maxFreq) {
-            maxFreq = frequency[num];
-        }
-    });
-    
-    Object.keys(frequency).forEach(key => {
-        if (frequency[key] === maxFreq) {
-            modes.push(parseFloat(key));
-        }
-    });
-    
-    if (modes.length === dataArray.length) {
-        stats.mode = 'No mode';
-    } else if (modes.length === 1) {
-        stats.mode = modes[0].toFixed(4);
-    } else {
-        stats.mode = modes.map(m => m.toFixed(4)).join(', ');
-    }
-    
-    // Calculate standard deviation
-    const variance = dataArray.reduce((sum, val) => sum + Math.pow(val - stats.mean, 2), 0) / stats.count;
-    stats.stddev = Math.sqrt(variance);
-    
-    // Display results
-    displayStatisticsResults(stats);
+  });
+
+  if (modes.length === dataArray.length) {
+    stats.mode = 'No mode';
+  } else if (modes.length === 1) {
+    stats.mode = modes[0].toFixed(4);
+  } else {
+    stats.mode = modes.map(m => m.toFixed(4)).join(', ');
+  }
+
+  const variance = dataArray.reduce((sum, val) => sum + Math.pow(val - stats.mean, 2), 0) / stats.count;
+  stats.stddev = Math.sqrt(variance);
+
+  displayStatisticsResults(stats);
 }
 
 function displayStatisticsResults(stats) {
-    const resultDiv = document.getElementById('stats-result');
-    document.getElementById('stat-count').textContent = stats.count;
-    document.getElementById('stat-sum').textContent = stats.sum.toFixed(2);
-    document.getElementById('stat-mean').textContent = stats.mean.toFixed(4);
-    document.getElementById('stat-median').textContent = stats.median.toFixed(4);
-    document.getElementById('stat-mode').textContent = stats.mode;
-    document.getElementById('stat-min').textContent = stats.min.toFixed(2);
-    document.getElementById('stat-max').textContent = stats.max.toFixed(2);
-    document.getElementById('stat-stddev').textContent = stats.stddev.toFixed(4);
-    
-    resultDiv.style.display = 'block';
+  const resultDiv = document.getElementById('stats-result');
+  document.getElementById('stat-count').textContent = stats.count;
+  document.getElementById('stat-sum').textContent = stats.sum.toFixed(2);
+  document.getElementById('stat-mean').textContent = stats.mean.toFixed(4);
+  document.getElementById('stat-median').textContent = stats.median.toFixed(4);
+  document.getElementById('stat-mode').textContent = stats.mode;
+  document.getElementById('stat-min').textContent = stats.min.toFixed(2);
+  document.getElementById('stat-max').textContent = stats.max.toFixed(2);
+  document.getElementById('stat-stddev').textContent = stats.stddev.toFixed(4);
+  resultDiv.style.display = 'block';
 }
 
 function clearStatistics() {
-    document.getElementById('stats-data-input').value = '';
-    document.getElementById('stats-result').style.display = 'none';
+  document.getElementById('stats-data-input').value = '';
+  document.getElementById('stats-result').style.display = 'none';
 }
