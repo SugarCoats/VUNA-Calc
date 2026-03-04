@@ -1,3 +1,8 @@
+// ===============================
+// 🧠 SMART RESULT MEMORY FEATURE
+// ===============================
+
+let LAST_RESULT = 0;
 // ------------------------------
 // Theme Toggle Logic
 // ------------------------------
@@ -476,7 +481,18 @@ function calculateResult() {
       return;
     }
     let normalizedExpression = normalizeExpression(currentExpression);
+
+// 🧠 Replace "ans" with last result automatically
+    normalizedExpression = normalizedExpression.replace(/\bans\b/gi, LAST_RESULT);
+
+// Calculate result
     let result = eval(normalizedExpression);
+
+// Save result for future expressions
+    LAST_RESULT = result;
+
+// Display normally
+    display.value = result;
 
     if (isNaN(result) || !isFinite(result)) {
       throw new Error();
@@ -3252,175 +3268,3 @@ window.updateResult = function () {
     console.log("Insight skipped:", e);
   }
 };
-// ======================================================
-// 🧬 EXPRESSION DNA ANALYZER
-// ======================================================
-
-function analyzeExpressionDNA(expression) {
-
-  const dnaBox = document.getElementById("expression-dna");
-  if (!dnaBox) return;
-
-  if (!expression || typeof expression !== "string") {
-    dnaBox.style.display = "none";
-    return;
-  }
-
-  const operators = expression.match(/[+\-*/^]/g) || [];
-  const uniqueOperators = [...new Set(operators)];
-  const operands = expression.match(/[0-9.]+/g) || [];
-
-  // Parentheses depth calculation
-  let maxDepth = 0;
-  let currentDepth = 0;
-
-  for (let char of expression) {
-    if (char === "(") {
-      currentDepth++;
-      if (currentDepth > maxDepth) maxDepth = currentDepth;
-    }
-    if (char === ")") {
-      currentDepth--;
-    }
-  }
-
-  // Detect scientific keywords
-  const scientificKeywords = ["sin", "cos", "tan", "log", "sqrt"];
-  const isScientific = scientificKeywords.some(keyword =>
-    expression.toLowerCase().includes(keyword)
-  );
-
-  // Complexity score (simple weighted formula)
-  let score =
-    uniqueOperators.length * 2 +
-    maxDepth * 2 +
-    operands.length * 0.5 +
-    (isScientific ? 2 : 0);
-
-  score = Math.min(10, Math.round(score));
-
-  let type = "Arithmetic";
-  if (isScientific && uniqueOperators.length > 0) type = "Mixed Scientific";
-  else if (isScientific) type = "Scientific";
-
-  dnaBox.innerHTML =
-    `<span class="small-label">🧬 Expression DNA</span><br>` +
-    `• Operators used: ${operators.length}<br>` +
-    `• Unique operators: ${uniqueOperators.join(", ") || "None"}<br>` +
-    `• Parentheses depth: ${maxDepth}<br>` +
-    `• Operands: ${operands.length}<br>` +
-    `• Type: ${type}<br>` +
-    `• Complexity Score: ${score}/10`;
-
-  dnaBox.style.display = "block";
-}
-
-// ======================================================
-// AUTO-HOOK INTO CALCULATOR
-// ======================================================
-
-const originalCalculateResult = window.calculateResult;
-
-window.calculateResult = function () {
-  if (originalCalculateResult) {
-    originalCalculateResult();
-  }
-
-  try {
-    if (typeof currentExpression !== "undefined") {
-      analyzeExpressionDNA(currentExpression);
-    }
-  } catch (e) {
-    console.log("DNA analysis skipped:", e);
-  }
-};
-// ===============================
-// 🧬 TOGGLE BUTTON CONTROLLER
-// ===============================
-
-let dnaVisible = false;
-
-function toggleDNA() {
-  const box = document.getElementById("expression-dna");
-
-  if (!box) {
-    console.log("DNA box not found");
-    return;
-  }
-
-  dnaVisible = !dnaVisible;
-
-  if (dnaVisible) {
-    analyzeExpressionDNA();
-    box.style.display = "block";
-  } else {
-    box.style.display = "none";
-  }
-}
-
-
-// ===============================
-// 🧬 EXPRESSION DNA ANALYZER
-// ===============================
-
-function analyzeExpressionDNA() {
-
-  const dnaBox = document.getElementById("expression-dna");
-
-  // 🔥 CHANGE THIS ID if your display has another name
-  const display = document.getElementById("display");
-
-  if (!display || !dnaBox) return;
-
-  const expression = display.value || display.textContent;
-
-  if (!expression) {
-    dnaBox.innerHTML = "No expression to analyze.";
-    return;
-  }
-
-  const operators = expression.match(/[+\-*/^]/g) || [];
-  const uniqueOperators = [...new Set(operators)];
-  const operands = expression.match(/[0-9.]+/g) || [];
-
-  // Parentheses depth
-  let depth = 0;
-  let maxDepth = 0;
-
-  for (let char of expression) {
-    if (char === "(") {
-      depth++;
-      maxDepth = Math.max(maxDepth, depth);
-    }
-    if (char === ")") depth--;
-  }
-
-  // Scientific detection
-  const scientificWords = ["sin", "cos", "tan", "log", "sqrt"];
-  const isScientific = scientificWords.some(word =>
-    expression.toLowerCase().includes(word)
-  );
-
-  // Complexity score
-  let score =
-    uniqueOperators.length * 2 +
-    maxDepth * 2 +
-    operands.length * 0.5 +
-    (isScientific ? 2 : 0);
-
-  score = Math.min(10, Math.round(score));
-
-  let type = "Arithmetic";
-  if (isScientific && operators.length) type = "Mixed Scientific";
-  else if (isScientific) type = "Scientific";
-
-  dnaBox.innerHTML = `
-    <strong>🧬 Expression DNA</strong><br>
-    Operators used: ${operators.length}<br>
-    Unique operators: ${uniqueOperators.join(", ") || "None"}<br>
-    Parentheses depth: ${maxDepth}<br>
-    Operands: ${operands.length}<br>
-    Type: ${type}<br>
-    Complexity Score: ${score}/10
-  `;
-}
