@@ -1564,6 +1564,49 @@ function copyResult() {
     .catch(() => alert("Failed to copy"));
 }
 
+function percentToResult() {
+    // operate on the text currently shown in the display
+    if (!currentExpression) return;
+
+    // split into <left><operator><right> using the last operator (including **)
+    const match = currentExpression.match(/(.+?)(\*\*|[+\-*/^])([0-9.]*)$/);
+
+    if (!match) {
+        // no operator present – just divide the whole number by 100
+        const num = parseFloat(currentExpression);
+        if (isNaN(num)) return;
+        currentExpression = (num / 100).toString();
+    } else {
+        const leftPart = match[1];
+        const rightPart = match[3];
+
+        if (!rightPart) {
+            // nothing to convert yet
+            return;
+        }
+
+        // evaluate left part in case it contains an expression
+        let leftVal;
+        try {
+            leftVal = eval(leftPart);
+        } catch (e) {
+            leftVal = parseFloat(leftPart);
+        }
+        const rightVal = parseFloat(rightPart);
+        if (isNaN(leftVal) || isNaN(rightVal)) return;
+
+        const percentVal = (leftVal * rightVal) / 100;
+        // replace entire expression with the computed percent value
+        currentExpression = percentVal.toString();
+    }
+
+    // reset state variables for safety
+    left = currentExpression;
+    operator = "";
+    right = "";
+
+    updateResult();
+}
 function startVoiceInput() {
   clearResult();
   const SpeechRecognition =
@@ -3052,6 +3095,68 @@ function clearProbabilityCalculator() {
     document.getElementById('probability-result').style.display = 'none';
 }
 
+// ============================================
+// BMI CALCULATOR FUNCTIONS
+// ============================================
+
+/**
+ * Calculates the Body Mass Index (BMI) based on weight and height.
+ */
+function calculateBMI() {
+    const weight = parseFloat(document.getElementById('bmi-weight').value);
+    const heightCm = parseFloat(document.getElementById('bmi-height').value);
+    const resultDiv = document.getElementById('bmi-result');
+    const bmiValueSpan = document.getElementById('bmi-value');
+    const bmiCategorySpan = document.getElementById('bmi-category');
+    const bmiNoteSpan = document.getElementById('bmi-note');
+
+    if (isNaN(weight) || isNaN(heightCm) || weight <= 0 || heightCm <= 0) {
+        alert('Please enter valid positive numbers for weight and height.');
+        return;
+    }
+
+    // Formula: BMI = weight (kg) / [height (m)]^2
+    const heightM = heightCm / 100;
+    const bmi = weight / (heightM * heightM);
+    const bmiRounded = bmi.toFixed(2);
+
+    let category = '';
+    let note = '';
+
+    if (bmi < 18.5) {
+        category = 'Underweight';
+        note = 'It is important to eat a balanced diet and consult a healthcare provider.';
+    } else if (bmi >= 18.5 && bmi < 25) {
+        category = 'Normal weight';
+        note = 'Great job! Maintain a healthy lifestyle with balanced nutrition and exercise.';
+    } else if (bmi >= 25 && bmi < 30) {
+        category = 'Overweight';
+        note = 'Consider a more active lifestyle and balanced diet to reach a healthier range.';
+    } else {
+        category = 'Obese';
+        note = 'It is recommended to consult a healthcare provider for personalized advice.';
+    }
+
+    // Display the result
+    bmiValueSpan.textContent = bmiRounded;
+    bmiCategorySpan.textContent = category;
+    bmiNoteSpan.textContent = note;
+    resultDiv.style.display = 'block';
+
+    // Update main calculator display with the result
+    currentExpression = bmiRounded;
+    updateResult();
+}
+
+/**
+ * Clears the BMI calculator inputs and hides the result.
+ */
+function clearBMICalculator() {
+    document.getElementById('bmi-weight').value = '';
+    document.getElementById('bmi-height').value = '';
+    document.getElementById('bmi-result').style.display = 'none';
+}
+
 
 // ============================================
 // STATISTICAL CALCULATOR FUNCTIONS
@@ -3142,69 +3247,6 @@ function clearStatistics() {
   document.getElementById('stats-data-input').value = '';
   document.getElementById('stats-result').style.display = 'none';
 }
-
-// ============================================
-// BMI CALCULATOR FUNCTIONS
-// ============================================
-
-/**
- * Calculates the Body Mass Index (BMI) based on weight and height.
- */
-function calculateBMI() {
-    const weight = parseFloat(document.getElementById('bmi-weight').value);
-    const heightCm = parseFloat(document.getElementById('bmi-height').value);
-    const resultDiv = document.getElementById('bmi-result');
-    const bmiValueSpan = document.getElementById('bmi-value');
-    const bmiCategorySpan = document.getElementById('bmi-category');
-    const bmiNoteSpan = document.getElementById('bmi-note');
-
-    if (isNaN(weight) || isNaN(heightCm) || weight <= 0 || heightCm <= 0) {
-        alert('Please enter valid positive numbers for weight and height.');
-        return;
-    }
-
-    // Formula: BMI = weight (kg) / [height (m)]^2
-    const heightM = heightCm / 100;
-    const bmi = weight / (heightM * heightM);
-    const bmiRounded = bmi.toFixed(2);
-
-    let category = '';
-    let note = '';
-
-    if (bmi < 18.5) {
-        category = 'Underweight';
-        note = 'It is important to eat a balanced diet and consult a healthcare provider.';
-    } else if (bmi >= 18.5 && bmi < 25) {
-        category = 'Normal weight';
-        note = 'Great job! Maintain a healthy lifestyle with balanced nutrition and exercise.';
-    } else if (bmi >= 25 && bmi < 30) {
-        category = 'Overweight';
-        note = 'Consider a more active lifestyle and balanced diet to reach a healthier range.';
-    } else {
-        category = 'Obese';
-        note = 'It is recommended to consult a healthcare provider for personalized advice.';
-    }
-
-    // Display the result
-    bmiValueSpan.textContent = bmiRounded;
-    bmiCategorySpan.textContent = category;
-    bmiNoteSpan.textContent = note;
-    resultDiv.style.display = 'block';
-
-    // Update main calculator display with the result
-    currentExpression = bmiRounded;
-    updateResult();
-}
-
-/**
- * Clears the BMI calculator inputs and hides the result.
- */
-function clearBMICalculator() {
-    document.getElementById('bmi-weight').value = '';
-    document.getElementById('bmi-height').value = '';
-    document.getElementById('bmi-result').style.display = 'none';
-}
-
 
 // ------------------------------
 // ROUND UP TO DECIMAL PLACES
